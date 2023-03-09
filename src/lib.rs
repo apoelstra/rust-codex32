@@ -117,7 +117,7 @@ impl Codex32String {
         } else if s.len() > 95 && s.len() < 125 {
             ("long", checksum::Engine::new_codex32_long())
         } else {
-            return Err(Error::InvalidLength(s.len()))
+            return Err(Error::InvalidLength(s.len()));
         };
 
         // Split out the HRP
@@ -137,5 +137,3 @@ impl Codex32String {
         Ok(Codex32String(s))
     }
 }
-
-

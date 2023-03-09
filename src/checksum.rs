@@ -17,8 +17,8 @@
 //! Validates specific checksums
 //!
 
-use crate::field::Fe;
 use super::{Case, Error};
+use crate::field::Fe;
 
 /// An engine which consumes one GF32 character at a time, and produces
 /// a residue modulo some generator
@@ -132,7 +132,7 @@ impl Engine {
                 (Some(Case::Lower), true) | (Some(Case::Upper), false) => Ok(()),
                 (Some(case @ Case::Lower), false) | (Some(case @ Case::Upper), true) => {
                     Err(Error::InvalidCase(case, c))
-                },
+                }
                 (None, true) => {
                     self.case = Some(Case::Lower);
                     Ok(())
@@ -161,9 +161,6 @@ impl Engine {
         // Then reduce x^n mod the generator.
         for (i, ch) in self.generator.iter().enumerate() {
             self.residue[i] += *ch * xn;
-        }   
+        }
     }
 }
-
-
-

@@ -17,7 +17,10 @@
 //! Implements GF32 arithmetic, defined and encoded as in BIP-0173 "bech32"
 //!
 
-use std::{convert::{TryFrom, TryInto}, fmt, num, ops, str};
+use std::{
+    convert::{TryFrom, TryInto},
+    fmt, num, ops, str,
+};
 
 /// Locarithm table of each bech32 element, as a power of alpha = Z.
 ///
@@ -192,25 +195,23 @@ impl Fe {
 
     /// Creates a field element from an integer type
     pub fn from_int<I>(i: I) -> Result<Fe, super::Error>
-        where I: TryInto<u8, Error = num::TryFromIntError>, 
+    where
+        I: TryInto<u8, Error = num::TryFromIntError>,
     {
-        let byte = i.try_into()
-            .map_err(Error::NotAByte)?;
+        let byte = i.try_into().map_err(Error::NotAByte)?;
         if byte < 32 {
             Ok(Fe(byte))
         } else {
             Err(super::Error::Field(Error::InvalidByte(byte)))
         }
-
     }
 
     /// Creates a field element from a single bech32 character
     pub fn from_char(c: char) -> Result<Fe, super::Error> {
-        let byte = i8::try_from(u32::from(c))
-            .map_err(|_| super::Error::InvalidChar(c))?;
+        let byte = i8::try_from(u32::from(c)).map_err(|_| super::Error::InvalidChar(c))?;
         let byte = byte as u8; // cast guaranteed to be ok since we started with an unsigned value
-        let u5 = u8::try_from(CHARS_INV[usize::from(byte)])
-            .map_err(|_| super::Error::InvalidChar(c))?;
+        let u5 =
+            u8::try_from(CHARS_INV[usize::from(byte)]).map_err(|_| super::Error::InvalidChar(c))?;
         Ok(Fe(u5))
     }
 
@@ -294,4 +295,3 @@ mod tests {
         assert_eq!(s, "36xp78tgk9ldaecjy4mvh0funwr2zq5");
     }
 }
-
