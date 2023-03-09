@@ -293,9 +293,9 @@ impl Codex32String {
                 }
             }
 
-            for j in 0..payload_len {
+            for (j, res_j) in result.iter_mut().enumerate() {
                 let ch_at_i = char::from(shares[i].0.as_bytes()[hrp_len + j]);
-                result[j] += mult / inv * field::Fe::from_char(ch_at_i).unwrap();
+                *res_j += mult / inv * field::Fe::from_char(ch_at_i).unwrap();
             }
         }
 
@@ -348,14 +348,14 @@ impl Codex32String {
         let mut rem = 0;
         for byte in data {
             // Each byte provides at least one u5. Push that.
-            let u5 = (next_u5 << (5 - rem)) | byte >> 3 + rem;
+            let u5 = (next_u5 << (5 - rem)) | byte >> (3 + rem);
             ret.push(field::Fe::from_u8(u5).unwrap().to_char());
-            next_u5 = byte & ((1 << 3 + rem) - 1);
+            next_u5 = byte & ((1 << (3 + rem)) - 1);
             // If there were 2 or more bits from the last iteration, then
             // this iteration will push *two* u5s.
             if rem >= 2 {
-                ret.push(field::Fe::from_u8(next_u5 >> rem - 2).unwrap().to_char());
-                next_u5 &= (1 << rem - 2) - 1;
+                ret.push(field::Fe::from_u8(next_u5 >> (rem - 2)).unwrap().to_char());
+                next_u5 &= (1 << (rem - 2)) - 1;
             }
             rem = (rem + 8) % 5;
         }
