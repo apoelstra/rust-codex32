@@ -18,7 +18,6 @@
 //!
 
 use std::{convert::{TryFrom, TryInto}, fmt, num, ops, str};
-use super::Case;
 
 /// Locarithm table of each bech32 element, as a power of alpha = Z.
 ///
@@ -61,15 +60,10 @@ const CHARS_INV: [i8; 128] = [
 ];
 
 /// Field-related error
+#[derive(Debug)]
 pub enum Error {
-    /// Tried to decode the empty string as a GF32 element
-    EmptyString,
     /// Tried to decode a GF32 element from a string, but got more than one character
     ExtraChar(char),
-    /// Tried to decode a character which was not part of the bech32 alphabet
-    InvalidChar(char),
-    /// Tried to decode a character but its case did not match the expected case
-    InvalidCase(Case, char),
     /// Tried to interpret an integer as a GF32 element but it could not be
     /// converted to an u8.
     NotAByte(num::TryFromIntError),
@@ -150,8 +144,50 @@ impl ops::DivAssign for Fe {
 }
 
 impl Fe {
+    // These are a little gratuitous for a reference implementation,
+    // but it makes me happy to do it
+    pub const Q: Fe = Fe(0);
+    pub const P: Fe = Fe(1);
+    #[allow(dead_code)]
+    pub const Z: Fe = Fe(2);
+    pub const R: Fe = Fe(3);
+    pub const Y: Fe = Fe(4);
+    pub const _9: Fe = Fe(5);
+    pub const X: Fe = Fe(6);
+    pub const _8: Fe = Fe(7);
+    pub const G: Fe = Fe(8);
+    pub const F: Fe = Fe(9);
+    pub const _2: Fe = Fe(10);
+    pub const T: Fe = Fe(11);
+    #[allow(dead_code)]
+    pub const V: Fe = Fe(12);
+    #[allow(dead_code)]
+    pub const D: Fe = Fe(13);
+    #[allow(dead_code)]
+    pub const W: Fe = Fe(14);
+    pub const _0: Fe = Fe(15);
+    pub const S: Fe = Fe(16);
+    pub const _3: Fe = Fe(17);
+    #[allow(dead_code)]
+    pub const J: Fe = Fe(18);
+    #[allow(dead_code)]
+    pub const N: Fe = Fe(19);
+    pub const _5: Fe = Fe(20);
+    pub const _4: Fe = Fe(21);
+    pub const K: Fe = Fe(22);
+    pub const H: Fe = Fe(23);
+    pub const C: Fe = Fe(24);
+    pub const E: Fe = Fe(25);
+    pub const _6: Fe = Fe(26);
+    pub const M: Fe = Fe(27);
+    #[allow(dead_code)]
+    pub const U: Fe = Fe(28);
+    pub const A: Fe = Fe(29);
+    pub const _7: Fe = Fe(30);
+    pub const L: Fe = Fe(31);
+
     /// Creates a field element from an integer type
-    pub fn from_int<I>(i: I) -> Result<Fe, Error>
+    pub fn from_int<I>(i: I) -> Result<Fe, super::Error>
         where I: TryInto<u8, Error = num::TryFromIntError>, 
     {
         let byte = i.try_into()
@@ -159,46 +195,25 @@ impl Fe {
         if byte < 32 {
             Ok(Fe(byte))
         } else {
-            Err(Error::InvalidByte(byte))
+            Err(super::Error::Field(Error::InvalidByte(byte)))
         }
 
     }
 
     /// Creates a field element from a single bech32 character
-    pub fn from_char(c: char) -> Result<Fe, Error> {
+    pub fn from_char(c: char) -> Result<Fe, super::Error> {
         let byte = i8::try_from(u32::from(c))
-            .map_err(|_| Error::InvalidChar(c))?;
+            .map_err(|_| super::Error::InvalidChar(c))?;
         let byte = byte as u8; // cast guaranteed to be ok since we started with an unsigned value
         let u5 = u8::try_from(CHARS_INV[usize::from(byte)])
-            .map_err(|_| Error::InvalidChar(c))?;
+            .map_err(|_| super::Error::InvalidChar(c))?;
         Ok(Fe(u5))
-    }
-
-    /// Creates a field element from a single bech32 character, restricting the case
-    pub fn from_char_case(c: char, case: Case) -> Result<Fe, Error> {
-        // First try to decode, so that outright invalid characters return
-        // an error for being invalid, before checking case
-        let res = Fe::from_char(c)?;
-        // Then check the case
-        match (c.is_ascii_lowercase(), case) {
-            (true, Case::Lower) | (false, Case::Upper) => {}, // ok
-            _ => return Err(Error::InvalidCase(case, c)),
-        }
-        Ok(res)
     }
 
     /// Converts the field element to a lowercase bech32 character
     pub fn to_char(self) -> char {
         // casting and indexing fine as we have self.0 in [0, 32) as an invariant
         CHARS_LOWER[self.0 as usize]
-    }
-
-    /// Converts the field element to a bech32 character with the specified case
-    pub fn to_char_case(self, case: Case) -> char {
-        match case {
-            Case::Lower => self.to_char(),
-            Case::Upper => self.to_char().to_ascii_uppercase(),
-        }
     }
 }
 
@@ -209,13 +224,13 @@ impl fmt::Display for Fe {
 }
 
 impl str::FromStr for Fe {
-    type Err = Error;
-    fn from_str(s: &str) -> Result<Fe, Error> {
+    type Err = super::Error;
+    fn from_str(s: &str) -> Result<Fe, super::Error> {
         let mut chs = s.chars();
         match (chs.next(), chs.next()) {
             (Some(c), None) => Fe::from_char(c),
-            (Some(_), Some(c)) => Err(Error::ExtraChar(c)),
-            (None, _) => Err(Error::EmptyString),
+            (Some(_), Some(c)) => Err(super::Error::Field(Error::ExtraChar(c))),
+            (None, _) => Err(super::Error::InvalidLength(0)),
         }
     }
 }
@@ -223,6 +238,12 @@ impl str::FromStr for Fe {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn numeric_string() {
+        let s: String = (0..32).map(Fe).map(Fe::to_char).collect();
+        assert_eq!(s, "qpzry9x8gf2tvdw0s3jn54khce6mua7l");
+    }
 
     #[test]
     fn translation_wheel() {
