@@ -34,15 +34,18 @@ impl Engine {
     pub fn new_codex32_short() -> Engine {
         Engine {
             case: None,
+            #[rustfmt::skip]
             generator: vec![
                 Fe::S, Fe::S, Fe::C, Fe::M, Fe::L, Fe::E,
                 Fe::E, Fe::E, Fe::Q, Fe::G, Fe::_3, Fe::M,
             ],
+            #[rustfmt::skip]
             residue: vec![
                 Fe::Q, Fe::Q, Fe::Q, Fe::Q, Fe::Q, Fe::Q,
                 Fe::Q, Fe::Q, Fe::Q, Fe::Q, Fe::Q, Fe::Q,
                 Fe::P,
             ],
+            #[rustfmt::skip]
             target: vec![
                 Fe::S, Fe::E, Fe::C, Fe::R, Fe::E, Fe::T,
                 Fe::S, Fe::H, Fe::A, Fe::R, Fe::E, Fe::_3,
@@ -56,16 +59,19 @@ impl Engine {
         // hyk9x4hx4ef6e20p
         Engine {
             case: None,
+            #[rustfmt::skip]
             generator: vec![
                 Fe::H, Fe::Y, Fe::K, Fe::_9, Fe::X, Fe::_4,
                 Fe::H, Fe::X, Fe::_4, Fe::E, Fe::F, Fe::_6,
                 Fe::_2, Fe::_0,
             ],
+            #[rustfmt::skip]
             residue: vec![
                 Fe::Q, Fe::Q, Fe::Q, Fe::Q, Fe::Q, Fe::Q,
                 Fe::Q, Fe::Q, Fe::Q, Fe::Q, Fe::Q, Fe::Q,
                 Fe::Q, Fe::Q, Fe::P,
             ],
+            #[rustfmt::skip]
             target: vec![
                 Fe::S, Fe::E, Fe::C, Fe::R, Fe::E, Fe::T,
                 Fe::S, Fe::H, Fe::A, Fe::R, Fe::E, Fe::_3,

@@ -24,6 +24,7 @@ use std::{convert::{TryFrom, TryInto}, fmt, num, ops, str};
 /// Includes Q as 0 but this is false; you need to exclude Q because
 /// it has no discrete log. If we could have a 1-indexed array that
 /// would panic on a 0 index that would be better.
+#[rustfmt::skip]
 const LOG: [isize; 32] = [
      0,  0,  1, 14,  2, 28, 15, 22,
      3,  5, 29, 26, 16,  7, 23, 11, 
@@ -32,6 +33,7 @@ const LOG: [isize; 32] = [
 ];
 
 /// Mapping of powers of 2 to the numeric value of the element
+#[rustfmt::skip]
 const LOG_INV: [u8; 31] = [
      1,  2,  4,  8, 16,  9, 18, 13,
     26, 29, 19, 15, 30, 21,  3,  6,
@@ -40,6 +42,7 @@ const LOG_INV: [u8; 31] = [
 ];
 
 /// Mapping from numeric value to bech32 character
+#[rustfmt::skip]
 const CHARS_LOWER: [char; 32] = [
     'q', 'p', 'z', 'r', 'y', '9', 'x', '8', //  +0
     'g', 'f', '2', 't', 'v', 'd', 'w', '0', //  +8
@@ -48,6 +51,7 @@ const CHARS_LOWER: [char; 32] = [
 ];
 
 /// Mapping from bech32 character (either case) to numeric value
+#[rustfmt::skip]
 const CHARS_INV: [i8; 128] = [
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
