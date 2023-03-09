@@ -81,10 +81,7 @@ pub enum Error {
     /// A share index was repeated in the set of shares to interpolate.
     RepeatedIndex(field::Fe),
     /// A set of shares to be interpolated did not have enough shares
-    ThresholdNotPassed {
-        threshold: usize,
-        n_shares: usize,
-    },
+    ThresholdNotPassed { threshold: usize, n_shares: usize },
 }
 
 impl From<field::Error> for Error {
@@ -185,11 +182,7 @@ impl Codex32String {
             Some((s1, s2)) => (s1, s2),
             None => ("", &self.0[..]),
         };
-        let checksum_len = if self.0.len() > 93 {
-            15
-        } else {
-            13
-        };
+        let checksum_len = if self.0.len() > 93 { 15 } else { 13 };
         let ret = Parts {
             hrp,
             threshold: match s.as_bytes()[0] {
@@ -252,7 +245,10 @@ impl Codex32String {
                 return Err(Error::MismatchedHrp(s0_parts.hrp.into(), parts.hrp.into()));
             }
             if s0_parts.threshold != parts.threshold {
-                return Err(Error::MismatchedThreshold(s0_parts.threshold, parts.threshold));
+                return Err(Error::MismatchedThreshold(
+                    s0_parts.threshold,
+                    parts.threshold,
+                ));
             }
             if s0_parts.id != parts.id {
                 return Err(Error::MismatchedId(s0_parts.id.into(), parts.id.into()));
@@ -279,18 +275,19 @@ impl Codex32String {
         for i in 0..shares.len() {
             let mut inv = field::Fe::P;
             for j in 0..shares.len() {
-                inv *= indices[j] + if i == j {
-                    target
-                } else {
-                    // If there is a repeated index, just call this an error. Technically
-                    // speaking, we could reject the other one and re-do the threshold
-                    // check in case we had enough unique ones .. but easier to just make
-                    // it the user's responsibility to provide unique indices to begin with.
-                    if indices[i] == indices[j] {
-                        return Err(Error::RepeatedIndex(indices[i]));
+                inv *= indices[j]
+                    + if i == j {
+                        target
+                    } else {
+                        // If there is a repeated index, just call this an error. Technically
+                        // speaking, we could reject the other one and re-do the threshold
+                        // check in case we had enough unique ones .. but easier to just make
+                        // it the user's responsibility to provide unique indices to begin with.
+                        if indices[i] == indices[j] {
+                            return Err(Error::RepeatedIndex(indices[i]));
+                        }
+                        indices[i]
                     }
-                    indices[i]
-                }
             }
 
             for (j, res_j) in result.iter_mut().enumerate() {
@@ -302,7 +299,12 @@ impl Codex32String {
         let mut s = s0_parts.hrp.to_owned();
         s.push('1');
         if s0_parts.hrp.chars().all(char::is_uppercase) {
-            s.extend(result.into_iter().map(field::Fe::to_char).map(|c| c.to_ascii_uppercase()));
+            s.extend(
+                result
+                    .into_iter()
+                    .map(field::Fe::to_char)
+                    .map(|c| c.to_ascii_uppercase()),
+            );
         } else {
             s.extend(result.into_iter().map(field::Fe::to_char));
         }
@@ -321,9 +323,7 @@ impl Codex32String {
             return Err(Error::IdNotLength4(id.len()));
         }
 
-        let mut ret = String::with_capacity(
-            hrp.len() + 6 + (data.len() * 8 + 4) / 5
-        );
+        let mut ret = String::with_capacity(hrp.len() + 6 + (data.len() * 8 + 4) / 5);
         ret.push_str(hrp);
         ret.push('1');
         let k = match threshold {
@@ -379,7 +379,11 @@ impl Codex32String {
         let mut checksum = checksum::Engine::new_codex32_short();
         checksum.input_hrp(hrp)?;
         checksum.input_data_str(&ret[hrp.len() + 1..])?;
-        let cs: String = checksum.into_residue().into_iter().map(field::Fe::to_char).collect();
+        let cs: String = checksum
+            .into_residue()
+            .into_iter()
+            .map(field::Fe::to_char)
+            .collect();
         println!("cs {cs}");
         Ok(Codex32String(ret))
     }
@@ -410,22 +414,22 @@ impl<'s> Parts<'s> {
             let fe = field::Fe::from_char(ch).unwrap(); // unwrap ok since string is valid bech32
             match rem.cmp(&3) {
                 cmp::Ordering::Less => {
-                    // If we are within 3 bits of the start we can fit the whole next char in         
+                    // If we are within 3 bits of the start we can fit the whole next char in
                     next_byte |= fe.to_u8() << (3 - rem);
-                }       
+                }
                 cmp::Ordering::Equal => {
-                    // If we are exactly 3 bits from the start then this char fills in the byte       
+                    // If we are exactly 3 bits from the start then this char fills in the byte
                     ret.push(next_byte | fe.to_u8());
                     next_byte = 0;
-                }       
+                }
                 cmp::Ordering::Greater => {
                     // Otherwise we have to break it in two
                     let overshoot = rem - 3;
-                    assert!(overshoot > 0); 
+                    assert!(overshoot > 0);
                     ret.push(next_byte | (fe.to_u8() >> overshoot));
                     next_byte = fe.to_u8() << (8 - overshoot);
-                }       
-            }       
+                }
+            }
             rem = (rem + 5) % 8;
         }
         debug_assert!(rem <= 4); // checked when parsing the string
@@ -467,46 +471,38 @@ mod tests {
     #[test]
     fn bip_vector_2() {
         let share_ac = [
-            Codex32String::from_string(
-                "MS12NAMEA320ZYXWVUTSRQPNMLKJHGFEDCAXRPP870HKKQRM".into(),
-            ).unwrap(),
-            Codex32String::from_string(
-                "MS12NAMECACDEFGHJKLMNPQRSTUVWXYZ023FTR2GDZMPY6PN".into(),
-            ).unwrap(),
+            Codex32String::from_string("MS12NAMEA320ZYXWVUTSRQPNMLKJHGFEDCAXRPP870HKKQRM".into())
+                .unwrap(),
+            Codex32String::from_string("MS12NAMECACDEFGHJKLMNPQRSTUVWXYZ023FTR2GDZMPY6PN".into())
+                .unwrap(),
         ];
 
-        let share_d = Codex32String::interpolate_at(
-            &share_ac,
-            field::Fe::D,
-        ).unwrap();
+        let share_d = Codex32String::interpolate_at(&share_ac, field::Fe::D).unwrap();
         assert_eq!(
             share_d.to_string(),
             "MS12NAMEDLL4F8JLH4E5VDVULDLFXU2JHDNLSM97XVENRXEG"
         );
 
-        let seed = Codex32String::interpolate_at(
-            &share_ac,
-            field::Fe::S,
-        ).unwrap();
+        let seed = Codex32String::interpolate_at(&share_ac, field::Fe::S).unwrap();
         assert_eq!(
             seed.to_string(),
             "MS12NAMES6XQGUZTTXKEQNJSJZV4JV3NZ5K3KWGSPHUH6EVW"
         );
-        assert_eq!(hex(&seed.parts().data()), "d1808e096b35b209ca12132b264662a5");
+        assert_eq!(
+            hex(&seed.parts().data()),
+            "d1808e096b35b209ca12132b264662a5"
+        );
     }
 
     #[test]
     fn bip_vector_3() {
         let share_sac = [
-            Codex32String::from_string(
-                "ms13cashsllhdmn9m42vcsamx24zrxgs3qqjzqud4m0d6nln".into(),
-            ).unwrap(),
-            Codex32String::from_string(
-                "ms13casha320zyxwvutsrqpnmlkjhgfedca2a8d0zehn8a0t".into(),
-            ).unwrap(),
-            Codex32String::from_string(
-                "ms13cashcacdefghjklmnpqrstuvwxyz023949xq35my48dr".into(),
-            ).unwrap(),
+            Codex32String::from_string("ms13cashsllhdmn9m42vcsamx24zrxgs3qqjzqud4m0d6nln".into())
+                .unwrap(),
+            Codex32String::from_string("ms13casha320zyxwvutsrqpnmlkjhgfedca2a8d0zehn8a0t".into())
+                .unwrap(),
+            Codex32String::from_string("ms13cashcacdefghjklmnpqrstuvwxyz023949xq35my48dr".into())
+                .unwrap(),
         ];
 
         let share_def = [
@@ -530,6 +526,7 @@ mod tests {
 
     #[test]
     fn bip_vector_4() {
+        #[rustfmt::skip]
         let seed_b = [
             0xff, 0xee, 0xdd, 0xcc, 0xbb, 0xaa, 0x99, 0x88,
             0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00,
@@ -579,4 +576,3 @@ mod tests {
         );
     }
 }
-
