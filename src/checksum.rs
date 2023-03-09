@@ -36,8 +36,9 @@ impl Engine {
             case: None,
             #[rustfmt::skip]
             generator: vec![
-                Fe::S, Fe::S, Fe::C, Fe::M, Fe::L, Fe::E,
-                Fe::E, Fe::E, Fe::Q, Fe::G, Fe::_3, Fe::M,
+                Fe::E, Fe::M, Fe::_3, Fe::G, Fe::Q, Fe::E,
+                Fe::E, Fe::E, Fe::L, Fe::M, Fe::C, Fe::S,
+                Fe::S,
             ],
             #[rustfmt::skip]
             residue: vec![
@@ -61,9 +62,9 @@ impl Engine {
             case: None,
             #[rustfmt::skip]
             generator: vec![
-                Fe::H, Fe::Y, Fe::K, Fe::_9, Fe::X, Fe::_4,
-                Fe::H, Fe::X, Fe::_4, Fe::E, Fe::F, Fe::_6,
-                Fe::_2, Fe::_0,
+                Fe::_0, Fe::_2, Fe::E, Fe::_6, Fe::F, Fe::E,
+                Fe::_4, Fe::X, Fe::H, Fe::_4, Fe::X, Fe::_9,
+                Fe::K,  Fe::Y, Fe::H,
             ],
             #[rustfmt::skip]
             residue: vec![
@@ -99,9 +100,11 @@ impl Engine {
     pub fn input_hrp(&mut self, hrp: &str) -> Result<(), Error> {
         for ch in hrp.chars() {
             self.set_check_case(ch)?;
-            self.input_fe(Fe::from_int(u32::from(ch) >> 5)?);
-            self.input_fe(Fe::Q);
-            self.input_fe(Fe::from_int(u32::from(ch) & 0x1f)?);
+            self.input_fe(Fe::from_int(u32::from(ch.to_ascii_lowercase()) >> 5)?);
+        }
+        self.input_fe(Fe::Q);
+        for ch in hrp.chars() {
+            self.input_fe(Fe::from_int(u32::from(ch.to_ascii_lowercase()) & 0x1f)?);
         }
         Ok(())
     }
@@ -122,10 +125,21 @@ impl Engine {
         Ok(())
     }
 
+    /// Adds the target residue to the end of the input string
+    pub fn input_own_target(&mut self) {
+        let fuck_the_borrow_checker = self.target.clone();
+        for u in fuck_the_borrow_checker {
+            self.input_fe(u);
+        }
+    }
+
     /// Helper function to check that the whole input has consistent case
     fn set_check_case(&mut self, c: char) -> Result<(), Error> {
         if !c.is_ascii() {
             Err(Error::InvalidChar(c))
+        } else if c.is_numeric() {
+            // numbers don't affect case, nor are they affected by case
+            Ok(())
         } else {
             let is_lower = c.is_ascii_lowercase();
             match (self.case, is_lower) {
@@ -149,19 +163,19 @@ impl Engine {
     ///
     /// This is where the real magic happens.
     #[rustfmt::skip]
-    fn input_fe(&mut self, e: Fe) {
+    pub fn input_fe(&mut self, e: Fe) {
         let res_len = self.residue.len(); // needed for borrowck
         // Store current coefficient of x^{n-1}, which will become
         // x^n (and get reduced)
-        let xn = self.residue[res_len - 1];
+        let xn = self.residue[0];
         // Simply shift x^0 through x^{n-1} up one, and set x^0 to the new input
-        for i in 0..res_len - 1 {
-            self.residue[i + 1] = self.residue[i];
+        for i in 1..res_len {
+            self.residue[i - 1] = self.residue[i];
         }
-        self.residue[0] = e;
+        self.residue[res_len - 1] = e;
         // Then reduce x^n mod the generator.
-        for (i, ch) in self.generator.iter().enumerate() {
-            self.residue[i] += *ch * xn;
+        for i in 0..res_len {
+            self.residue[i] += self.generator[i] * xn;
         }
     }
 }

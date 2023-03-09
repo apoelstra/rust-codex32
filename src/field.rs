@@ -194,16 +194,22 @@ impl Fe {
     pub const L: Fe = Fe(31);
 
     /// Creates a field element from an integer type
-    pub fn from_int<I>(i: I) -> Result<Fe, super::Error>
-    where
-        I: TryInto<u8, Error = num::TryFromIntError>,
-    {
-        let byte = i.try_into().map_err(Error::NotAByte)?;
+    pub fn from_u8(byte: u8) -> Result<Fe, super::Error> {
         if byte < 32 {
             Ok(Fe(byte))
         } else {
             Err(super::Error::Field(Error::InvalidByte(byte)))
         }
+    }
+
+    /// Creates a field element from an integer type
+    pub fn from_int<I>(i: I) -> Result<Fe, super::Error>
+    where
+        I: TryInto<u8, Error = num::TryFromIntError>,
+    {
+        i.try_into()
+            .map_err(|e| super::Error::Field(Error::NotAByte(e)))
+            .and_then(Self::from_u8)
     }
 
     /// Creates a field element from a single bech32 character
@@ -219,6 +225,12 @@ impl Fe {
     pub fn to_char(self) -> char {
         // casting and indexing fine as we have self.0 in [0, 32) as an invariant
         CHARS_LOWER[self.0 as usize]
+    }
+
+    /// Converts the field element to a 5-bit u8, with bits representing the coefficients
+    /// of the polynomial representation.
+    pub fn to_u8(self) -> u8 {
+        self.0
     }
 }
 
