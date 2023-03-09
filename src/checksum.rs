@@ -103,7 +103,8 @@ impl Engine {
     /// Adds a single character to the checksum engine
     pub fn input_char(&mut self, c: char) -> Result<(), Error> {
         self.set_check_case(c)?;
-        Ok(self.input_fe(Fe::from_char(c)?))
+        self.input_fe(Fe::from_char(c)?);
+        Ok(())
     }
 
     /// Adds an entire string to the engine, counting each character as a data character

@@ -25,6 +25,16 @@
 //!   * BIP-0032 "BIP 32" <https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki>
 //!
 
+// This is the shittiest lint ever and has literally never been correct when
+// it has fired, and somehow in rust-bitcoin managed NOT to fire in the one
+// case where it might've been useful.
+// https://github.com/rust-bitcoin/rust-bitcoin/pull/1701
+#![allow(clippy::suspicious_arithmetic_impl)]
+// This one is also stupid but usually tolerable, though here we have a series
+// of length checks and they want *one* of them to call is_empty() instead of
+// len(), just to break symmetry.
+#![allow(clippy::len_zero)]
+
 mod checksum;
 mod field;
 
