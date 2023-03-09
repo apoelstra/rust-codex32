@@ -148,6 +148,7 @@ impl Engine {
     /// Adds a single field element to the checksum engine
     ///
     /// This is where the real magic happens.
+    #[rustfmt::skip]
     fn input_fe(&mut self, e: Fe) {
         let res_len = self.residue.len(); // needed for borrowck
         // Store current coefficient of x^{n-1}, which will become
