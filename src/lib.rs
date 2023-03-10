@@ -35,6 +35,8 @@ mod checksum;
 mod field;
 
 use std::{cmp, fmt};
+pub use checksum::Engine as ChecksumEngine;
+pub use field::Fe;
 
 #[derive(Debug)]
 pub enum Error {
@@ -65,7 +67,7 @@ pub enum Error {
     InvalidThresholdN(usize),
     /// Share index was not an allowed value (only S if the threshold is 0,
     /// otherwise anything goes)
-    InvalidShareIndex(field::Fe),
+    InvalidShareIndex(Fe),
     /// A set of shares to be interpolated did not all have the same length
     MismatchedLength(usize, usize),
     /// A set of shares to be interpolated did not all have the same HRP
@@ -75,7 +77,7 @@ pub enum Error {
     /// A set of shares to be interpolated did not all have the same ID
     MismatchedId(String, String),
     /// A share index was repeated in the set of shares to interpolate.
-    RepeatedIndex(field::Fe),
+    RepeatedIndex(Fe),
     /// A set of shares to be interpolated did not have enough shares
     ThresholdNotPassed { threshold: usize, n_shares: usize },
 }
@@ -193,11 +195,11 @@ impl Codex32String {
                 _ => return Err(Error::InvalidThreshold(s.as_bytes()[0].into())),
             },
             id: &s[1..5],
-            share_index: field::Fe::from_char(s.as_bytes()[5].into()).unwrap(),
+            share_index: Fe::from_char(s.as_bytes()[5].into()).unwrap(),
             payload: &s[6..s.len() - checksum_len],
             checksum: &s[s.len() - checksum_len..],
         };
-        if ret.threshold == 0 && ret.share_index != field::Fe::S {
+        if ret.threshold == 0 && ret.share_index != Fe::S {
             return Err(Error::InvalidShareIndex(ret.share_index));
         }
         Ok(ret)
@@ -214,7 +216,7 @@ impl Codex32String {
     /// Using the index `Fe::S` will recover the master seed.
     pub fn interpolate_at(
         shares: &[Codex32String],
-        target: field::Fe,
+        target: Fe,
     ) -> Result<Codex32String, Error> {
         // Collect indices and sanity check
         if shares.is_empty() {
@@ -252,7 +254,7 @@ impl Codex32String {
         }
 
         // Do lagrange interpolation
-        let mut mult = field::Fe::P;
+        let mut mult = Fe::P;
         for i in 0..shares.len() {
             if indices[i] == target {
                 // If we're trying to output an input share, just output it directly.
@@ -265,10 +267,10 @@ impl Codex32String {
 
         let payload_len = 6 + s0_parts.payload.len() + s0_parts.checksum.len();
         let hrp_len = shares[0].0.len() - payload_len;
-        let mut result = vec![field::Fe::Q; payload_len];
+        let mut result = vec![Fe::Q; payload_len];
 
         for i in 0..shares.len() {
-            let mut inv = field::Fe::P;
+            let mut inv = Fe::P;
             for j in 0..shares.len() {
                 inv *= indices[j]
                     + if i == j {
@@ -287,7 +289,7 @@ impl Codex32String {
 
             for (j, res_j) in result.iter_mut().enumerate() {
                 let ch_at_i = char::from(shares[i].0.as_bytes()[hrp_len + j]);
-                *res_j += mult / inv * field::Fe::from_char(ch_at_i).unwrap();
+                *res_j += mult / inv * Fe::from_char(ch_at_i).unwrap();
             }
         }
 
@@ -297,11 +299,11 @@ impl Codex32String {
             s.extend(
                 result
                     .into_iter()
-                    .map(field::Fe::to_char)
+                    .map(Fe::to_char)
                     .map(|c| c.to_ascii_uppercase()),
             );
         } else {
-            s.extend(result.into_iter().map(field::Fe::to_char));
+            s.extend(result.into_iter().map(Fe::to_char));
         }
         Ok(Codex32String(s))
     }
@@ -311,7 +313,7 @@ impl Codex32String {
         hrp: &str,
         threshold: usize,
         id: &str,
-        share_idx: field::Fe,
+        share_idx: Fe,
         data: &[u8],
     ) -> Result<Codex32String, Error> {
         if id.len() != 4 {
@@ -322,15 +324,15 @@ impl Codex32String {
         ret.push_str(hrp);
         ret.push('1');
         let k = match threshold {
-            0 => field::Fe::_0,
-            2 => field::Fe::_2,
-            3 => field::Fe::_3,
-            4 => field::Fe::_4,
-            5 => field::Fe::_5,
-            6 => field::Fe::_6,
-            7 => field::Fe::_7,
-            8 => field::Fe::_8,
-            9 => field::Fe::_9,
+            0 => Fe::_0,
+            2 => Fe::_2,
+            3 => Fe::_3,
+            4 => Fe::_4,
+            5 => Fe::_5,
+            6 => Fe::_6,
+            7 => Fe::_7,
+            8 => Fe::_8,
+            9 => Fe::_9,
             x => return Err(Error::InvalidThresholdN(x)),
         };
         // FIXME correct case to match HRP
@@ -344,18 +346,18 @@ impl Codex32String {
         for byte in data {
             // Each byte provides at least one u5. Push that.
             let u5 = (next_u5 << (5 - rem)) | byte >> (3 + rem);
-            ret.push(field::Fe::from_u8(u5).unwrap().to_char());
+            ret.push(Fe::from_u8(u5).unwrap().to_char());
             next_u5 = byte & ((1 << (3 + rem)) - 1);
             // If there were 2 or more bits from the last iteration, then
             // this iteration will push *two* u5s.
             if rem >= 2 {
-                ret.push(field::Fe::from_u8(next_u5 >> (rem - 2)).unwrap().to_char());
+                ret.push(Fe::from_u8(next_u5 >> (rem - 2)).unwrap().to_char());
                 next_u5 &= (1 << (rem - 2)) - 1;
             }
             rem = (rem + 8) % 5;
         }
         if rem > 0 {
-            ret.push(field::Fe::from_u8(next_u5 << (5 - rem)).unwrap().to_char());
+            ret.push(Fe::from_u8(next_u5 << (5 - rem)).unwrap().to_char());
         }
 
         // Initialize checksum engine with HRP and header
@@ -369,7 +371,7 @@ impl Codex32String {
         // Now, to compute the checksum, we stick the target residue onto the end
         // of the input string, the take the resulting residue as the checksum
         checksum.input_own_target();
-        ret.extend(checksum.into_residue().into_iter().map(field::Fe::to_char));
+        ret.extend(checksum.into_residue().into_iter().map(Fe::to_char));
 
         let mut checksum = checksum::Engine::new_codex32_short();
         checksum.input_hrp(hrp)?;
@@ -384,7 +386,7 @@ pub struct Parts<'s> {
     hrp: &'s str,
     threshold: usize,
     id: &'s str,
-    share_index: field::Fe,
+    share_index: Fe,
     payload: &'s str,
     checksum: &'s str,
 }
@@ -400,7 +402,7 @@ impl<'s> Parts<'s> {
         let mut next_byte = 0;
         let mut rem = 0;
         for ch in self.payload.chars() {
-            let fe = field::Fe::from_char(ch).unwrap(); // unwrap ok since string is valid bech32
+            let fe = Fe::from_char(ch).unwrap(); // unwrap ok since string is valid bech32
             match rem.cmp(&3) {
                 cmp::Ordering::Less => {
                     // If we are within 3 bits of the start we can fit the whole next char in
@@ -448,7 +450,7 @@ mod tests {
         assert_eq!(c32_parts.hrp, "ms");
         // Don't test the separator "1" which is not stored anywhere
         assert_eq!(c32_parts.threshold, 0);
-        assert_eq!(c32_parts.share_index, field::Fe::S);
+        assert_eq!(c32_parts.share_index, Fe::S);
         assert_eq!(c32_parts.id, "test");
         assert_eq!(c32_parts.payload, "xxxxxxxxxxxxxxxxxxxxxxxxxx");
         assert_eq!(c32_parts.checksum, "4nzvca9cmczlw");
@@ -466,13 +468,13 @@ mod tests {
                 .unwrap(),
         ];
 
-        let share_d = Codex32String::interpolate_at(&share_ac, field::Fe::D).unwrap();
+        let share_d = Codex32String::interpolate_at(&share_ac, Fe::D).unwrap();
         assert_eq!(
             share_d.to_string(),
             "MS12NAMEDLL4F8JLH4E5VDVULDLFXU2JHDNLSM97XVENRXEG"
         );
 
-        let seed = Codex32String::interpolate_at(&share_ac, field::Fe::S).unwrap();
+        let seed = Codex32String::interpolate_at(&share_ac, Fe::S).unwrap();
         assert_eq!(
             seed.to_string(),
             "MS12NAMES6XQGUZTTXKEQNJSJZV4JV3NZ5K3KWGSPHUH6EVW"
@@ -495,9 +497,9 @@ mod tests {
         ];
 
         let share_def = [
-            Codex32String::interpolate_at(&share_sac, field::Fe::D).unwrap(),
-            Codex32String::interpolate_at(&share_sac, field::Fe::E).unwrap(),
-            Codex32String::interpolate_at(&share_sac, field::Fe::F).unwrap(),
+            Codex32String::interpolate_at(&share_sac, Fe::D).unwrap(),
+            Codex32String::interpolate_at(&share_sac, Fe::E).unwrap(),
+            Codex32String::interpolate_at(&share_sac, Fe::F).unwrap(),
         ];
         assert_eq!(
             share_def[0].to_string(),
@@ -522,7 +524,7 @@ mod tests {
             0xff, 0xee, 0xdd, 0xcc, 0xbb, 0xaa, 0x99, 0x88,
             0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00, 
         ];
-        let seed = Codex32String::from_seed("ms", 0, "leet", field::Fe::S, &seed_b).unwrap();
+        let seed = Codex32String::from_seed("ms", 0, "leet", Fe::S, &seed_b).unwrap();
         assert_eq!(
             seed.to_string(),
             "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqqtum9pgv99ycma",

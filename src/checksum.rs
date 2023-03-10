@@ -22,6 +22,7 @@ use crate::field::Fe;
 
 /// An engine which consumes one GF32 character at a time, and produces
 /// a residue modulo some generator
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Engine {
     case: Option<Case>,
     generator: Vec<Fe>,
@@ -79,6 +80,15 @@ impl Engine {
                 Fe::_2, Fe::E, Fe::X,
             ],
         }
+    }
+
+    /// When computing checksums of "diffs" you do may want to set
+    /// the highest-degree coefficient of the polynomial to 1.
+    ///
+    /// If you do not know exactly why you are using this function,
+    /// you should not use it.
+    pub fn force_residue_to_zero(&mut self) {
+        self.residue = vec![Fe::Q; self.residue.len()];
     }
 
     /// Extracts the residue from a checksum engine

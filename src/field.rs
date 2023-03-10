@@ -193,6 +193,16 @@ impl Fe {
     pub const _7: Fe = Fe(30);
     pub const L: Fe = Fe(31);
 
+    /// Iterator over all field elements, in alphabetical order
+    pub fn iter_alpha() -> impl Iterator<Item = Fe> {
+        [
+            Fe::A, Fe::C, Fe::D, Fe::E, Fe::F, Fe::G, Fe::H, Fe::J,
+            Fe::K, Fe::L, Fe::M, Fe::N, Fe::P, Fe::Q, Fe::R, Fe::S,
+            Fe::T, Fe::U, Fe::V, Fe::W, Fe::X, Fe::Y, Fe::Z, Fe::_0,
+            Fe::_2, Fe::_3, Fe::_4, Fe::_5, Fe::_6, Fe::_7, Fe::_8, Fe::_9,
+        ].iter().copied()
+    }
+
     /// Creates a field element from an integer type
     pub fn from_u8(byte: u8) -> Result<Fe, super::Error> {
         if byte < 32 {
