@@ -589,7 +589,10 @@ mod tests {
             if let Err(Error::InvalidChecksum { .. }) = Codex32String::from_string(chk.into()) {
                 // ok
             } else {
-                panic!("Accepted {} with bad checksum, or raised a different error", chk);
+                panic!(
+                    "Accepted {} with bad checksum, or raised a different error",
+                    chk
+                );
             }
         }
 
@@ -612,7 +615,10 @@ mod tests {
             } else if let Err(Error::InvalidLength { .. }) = err {
                 // also ok
             } else {
-                panic!("Accepted {} with bad checksum, or raised a different error", chk);
+                panic!(
+                    "Accepted {} with bad checksum, or raised a different error",
+                    chk
+                );
             }
         }
     }
@@ -642,20 +648,27 @@ mod tests {
             } else if let Err(Error::IncompleteGroup(..)) = err {
                 // ok, Russell was not too careful about whether these langths ake sense
             } else {
-                panic!("Accepted {} with invalid length, or raised a different error: {:?}", chk, err);
+                panic!(
+                    "Accepted {} with invalid length, or raised a different error: {:?}",
+                    chk, err
+                );
             }
         }
     }
 
     #[test]
     fn bip_invalid_misc() {
-        if let Err(Error::InvalidShareIndex(..)) = Codex32String::from_string("ms10testxxxxxxxxxxxxxxxxxxxxxxxxxxxx3wq9mzgrwag9".into()) {
+        if let Err(Error::InvalidShareIndex(..)) =
+            Codex32String::from_string("ms10testxxxxxxxxxxxxxxxxxxxxxxxxxxxx3wq9mzgrwag9".into())
+        {
             // ok
         } else {
             panic!("bad error, expected 'invalid share index'");
         }
 
-        if let Err(Error::InvalidThreshold(..)) = Codex32String::from_string("ms1testxxxxxxxxxxxxxxxxxxxxxxxxxxxxs9lz3we7s9wh4".into()) {
+        if let Err(Error::InvalidThreshold(..)) =
+            Codex32String::from_string("ms1testxxxxxxxxxxxxxxxxxxxxxxxxxxxxs9lz3we7s9wh4".into())
+        {
             // ok
         } else {
             panic!("bad error, expected 'invalid share index'");
@@ -679,7 +692,10 @@ mod tests {
             if let Err(Error::InvalidCase { .. }) = err {
                 // ok, Russell was not too careful about whether these langths ake sense
             } else {
-                panic!("Accepted {} with invalid length, or raised a different error: {:?}", chk, err);
+                panic!(
+                    "Accepted {} with invalid length, or raised a different error: {:?}",
+                    chk, err
+                );
             }
         }
     }
