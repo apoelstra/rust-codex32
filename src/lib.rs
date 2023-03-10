@@ -30,10 +30,6 @@
 // case where it might've been useful.
 // https://github.com/rust-bitcoin/rust-bitcoin/pull/1701
 #![allow(clippy::suspicious_arithmetic_impl)]
-// This one is also stupid but usually tolerable, though here we have a series
-// of length checks and they want *one* of them to call is_empty() instead of
-// len(), just to break symmetry.
-#![allow(clippy::len_zero)]
 
 mod checksum;
 mod field;
@@ -148,12 +144,12 @@ impl Codex32String {
 
     /// Construct a codex32 string from an already-checksummed string
     pub fn from_string(s: String) -> Result<Self, Error> {
-        let (name, mut checksum) = if s.len() > 0 && s.len() < 94 {
+        let (name, mut checksum) = if s.len() >= 48 && s.len() < 94 {
             ("short", checksum::Engine::new_codex32_short())
-        } else if s.len() > 95 && s.len() < 125 {
-            return Err(Error::InvalidLength(s.len()));
-        } else {
+        } else if s.len() >= 125 && s.len() < 128 {
             ("long", checksum::Engine::new_codex32_long())
+        } else {
+            return Err(Error::InvalidLength(s.len()));
         };
 
         // Split out the HRP
@@ -164,7 +160,6 @@ impl Codex32String {
         checksum.input_hrp(hrp)?;
         checksum.input_data_str(real_string)?;
         if !checksum.is_valid() {
-            println!("{:?}", checksum.into_residue());
             return Err(Error::InvalidChecksum {
                 checksum: name,
                 string: s,
@@ -379,12 +374,6 @@ impl Codex32String {
         let mut checksum = checksum::Engine::new_codex32_short();
         checksum.input_hrp(hrp)?;
         checksum.input_data_str(&ret[hrp.len() + 1..])?;
-        let cs: String = checksum
-            .into_residue()
-            .into_iter()
-            .map(field::Fe::to_char)
-            .collect();
-        println!("cs {cs}");
         Ok(Codex32String(ret))
     }
 }
@@ -574,5 +563,124 @@ mod tests {
             hex(&long_seed.parts().data()),
             "dc5423251cb87175ff8110c8531d0952d8d73e1194e95b5f19d6f9df7c01111104c9baecdfea8cccc677fb9ddc8aec5553b86e528bcadfdcc201c17c638c47e9",
         );
+    }
+
+    #[test]
+    fn bip_invalid_bad_checksums() {
+        let bad_checksums = [
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxmazxdp4sx5q",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxq70v3y94304t",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxg4m2aylswft",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxght46zhq0x4",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxl8jqrdhvqkc4",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxepvjkxnc9wu",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxcakee32853f",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxx4nknfgj6u67a",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx3n5n5gyweuvq3",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxjqllfg3pf3fv4",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxn0c66xf2j0kjn",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxh73jw8glx8fpk",
+            "ms10testsyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyymjljntsznrq3mv",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx0p99y5vsmt84t",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxj4r3qrklkmtsz",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx8kp950klmrlsm",
+        ];
+        for chk in bad_checksums {
+            if let Err(Error::InvalidChecksum { .. }) = Codex32String::from_string(chk.into()) {
+                // ok
+            } else {
+                panic!("Accepted {} with bad checksum, or raised a different error", chk);
+            }
+        }
+
+        let wrong_checksums = [
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxx372x3mkc5m8sa0q",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxx82zvxjc02rt0vnl",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxyc57nnpvpcnhggt",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxf9e2wxsusjgmlws",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxdpu39xl2lkru3g4",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxqelpaxwk0jz4e",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxncdn5kjxq7grt",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxhq00y08vc7gjg",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxdckj6wn4z7r3p",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxjl32g6u3wgg8j",
+        ];
+        for chk in wrong_checksums {
+            let err = Codex32String::from_string(chk.into());
+            if let Err(Error::InvalidChecksum { .. }) = err {
+                // ok
+            } else if let Err(Error::InvalidLength { .. }) = err {
+                // also ok
+            } else {
+                panic!("Accepted {} with bad checksum, or raised a different error", chk);
+            }
+        }
+    }
+
+    #[test]
+    fn bip_invalid_improper_length() {
+        let bad_length = [
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxx8ty2gx0n6rnaa",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxus2h522w7u6vq",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxc8d60uanwukvn",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxwaaaq5yk0vfeg",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxu9cfgk0a4muxaam",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxzu2kdncfaew65ae",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxpsx45vtf9n2uk5h",
+            "ms12testxxxxxxxxxxxxxxxxxxxxxxxxxtn5jkk94ayuqc",
+            "ms12testxxxxxxxxxxxxxxxxxxxxxxxxxxvspjygypsrrkl",
+            "ms12testxxxxxxxxxxxxxxxxxxxxxxxxxxxxqmufxffdkzfac",
+            "ms12testxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxmgr4z3c807ml7",
+            "ms12testxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx4q3s54t8ejm8dfj",
+            "ms12testxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxr0wzwtfvgh3th2",
+            "ms12testxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxcpkhsxdrp05hymv",
+        ];
+        for chk in bad_length {
+            let err = Codex32String::from_string(chk.into());
+            if let Err(Error::InvalidLength { .. }) = err {
+                // ok
+            } else if let Err(Error::IncompleteGroup(..)) = err {
+                // ok, Russell was not too careful about whether these langths ake sense
+            } else {
+                panic!("Accepted {} with invalid length, or raised a different error: {:?}", chk, err);
+            }
+        }
+    }
+
+    #[test]
+    fn bip_invalid_misc() {
+        if let Err(Error::InvalidShareIndex(..)) = Codex32String::from_string("ms10testxxxxxxxxxxxxxxxxxxxxxxxxxxxx3wq9mzgrwag9".into()) {
+            // ok
+        } else {
+            panic!("bad error, expected 'invalid share index'");
+        }
+
+        if let Err(Error::InvalidThreshold(..)) = Codex32String::from_string("ms1testxxxxxxxxxxxxxxxxxxxxxxxxxxxxs9lz3we7s9wh4".into()) {
+            // ok
+        } else {
+            panic!("bad error, expected 'invalid share index'");
+        }
+    }
+
+    // Skip tho "missing ms prefix" tests because this library is HRP-agnostic
+    // FIXME it probably should not be, and should probably enforce the ms
+
+    #[test]
+    fn bip_invalid_case() {
+        let bad_case = [
+            "MS10testsxxxxxxxxxxxxxxxxxxxxxxxxxx4nzvca9cmczlw",
+            "ms10TESTsxxxxxxxxxxxxxxxxxxxxxxxxxx4nzvca9cmczlw",
+            "ms10testSxxxxxxxxxxxxxxxxxxxxxxxxxx4nzvca9cmczlw",
+            "ms10testsXXXXXXXXXXXXXXXXXXXXXXXXXX4nzvca9cmczlw",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxx4NZVCA9CMCZLW",
+        ];
+        for chk in bad_case {
+            let err = Codex32String::from_string(chk.into());
+            if let Err(Error::InvalidCase { .. }) = err {
+                // ok, Russell was not too careful about whether these langths ake sense
+            } else {
+                panic!("Accepted {} with invalid length, or raised a different error: {:?}", chk, err);
+            }
+        }
     }
 }
