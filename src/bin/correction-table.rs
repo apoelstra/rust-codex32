@@ -139,7 +139,7 @@ fn main() {
     }
 
     for (res, errs) in &residues {
-        print!("{res}: ");
+        print!("{}: ", res);
         print!("{}", errs[0]);
         for more in &errs[1..] {
             print!(", {}", more);

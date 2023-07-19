@@ -128,9 +128,10 @@ impl Codex32String {
         s.reserve_exact(len);
 
         // Split out the HRP
-        let (hrp, real_string) = match s.rsplit_once('1') {
-            Some((s1, s2)) => (s1, s2),
-            None => ("", &s[..]),
+        let mut rsplit = s.rsplitn(2, '1');
+        let (hrp, real_string) = match (rsplit.next(), rsplit.next()) {
+            (Some(s2), Some(s1)) => (s1, s2),
+            _ => ("", &s[..]),
         };
         // Compute the checksum
         checksum.input_hrp(hrp)?;
@@ -155,9 +156,10 @@ impl Codex32String {
         };
 
         // Split out the HRP
-        let (hrp, real_string) = match s.rsplit_once('1') {
-            Some((s1, s2)) => (s1, s2),
-            None => ("", &s[..]),
+        let mut rsplit = s.rsplitn(2, '1');
+        let (hrp, real_string) = match (rsplit.next(), rsplit.next()) {
+            (Some(s2), Some(s1)) => (s1, s2),
+            _ => ("", &s[..]),
         };
         checksum.input_hrp(hrp)?;
         checksum.input_data_str(real_string)?;
@@ -175,9 +177,10 @@ impl Codex32String {
 
     /// Break the string up into its constituent parts
     fn parts_inner(&self) -> Result<Parts, Error> {
-        let (hrp, s) = match self.0.rsplit_once('1') {
-            Some((s1, s2)) => (s1, s2),
-            None => ("", &self.0[..]),
+        let mut rsplit = self.0.rsplitn(2, '1');
+        let (hrp, s) = match (rsplit.next(), rsplit.next()) {
+            (Some(s2), Some(s1)) => (s1, s2),
+            _ => ("", &self.0[..]),
         };
         let checksum_len = if self.0.len() > 93 { 15 } else { 13 };
         let ret = Parts {
@@ -550,8 +553,8 @@ mod tests {
             "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqwcnrwpmlkmt9dt",
             "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyq0pgjxpzx0ysaam",
         ];
-        for alt in alt_encodings {
-            let seed = Codex32String::from_string(alt.into()).unwrap();
+        for alt in &alt_encodings {
+            let seed = Codex32String::from_string(alt.to_string()).unwrap();
             assert_eq!(seed.parts().data(), seed_b);
         }
     }
@@ -587,8 +590,8 @@ mod tests {
             "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxj4r3qrklkmtsz",
             "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx8kp950klmrlsm",
         ];
-        for chk in bad_checksums {
-            if let Err(Error::InvalidChecksum { .. }) = Codex32String::from_string(chk.into()) {
+        for chk in &bad_checksums {
+            if let Err(Error::InvalidChecksum { .. }) = Codex32String::from_string(chk.to_string()) {
                 // ok
             } else {
                 panic!(
@@ -610,8 +613,8 @@ mod tests {
             "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxdckj6wn4z7r3p",
             "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxjl32g6u3wgg8j",
         ];
-        for chk in wrong_checksums {
-            let err = Codex32String::from_string(chk.into());
+        for chk in &wrong_checksums {
+            let err = Codex32String::from_string(chk.to_string());
             if let Err(Error::InvalidChecksum { .. }) = err {
                 // ok
             } else if let Err(Error::InvalidLength { .. }) = err {
@@ -643,8 +646,8 @@ mod tests {
             "ms12testxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxr0wzwtfvgh3th2",
             "ms12testxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxcpkhsxdrp05hymv",
         ];
-        for chk in bad_length {
-            let err = Codex32String::from_string(chk.into());
+        for chk in &bad_length {
+            let err = Codex32String::from_string(chk.to_string());
             if let Err(Error::InvalidLength { .. }) = err {
                 // ok
             } else if let Err(Error::IncompleteGroup(..)) = err {
@@ -689,8 +692,8 @@ mod tests {
             "ms10testsXXXXXXXXXXXXXXXXXXXXXXXXXX4nzvca9cmczlw",
             "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxx4NZVCA9CMCZLW",
         ];
-        for chk in bad_case {
-            let err = Codex32String::from_string(chk.into());
+        for chk in &bad_case {
+            let err = Codex32String::from_string(chk.to_string());
             if let Err(Error::InvalidCase { .. }) = err {
                 // ok, Russell was not too careful about whether these langths ake sense
             } else {
