@@ -1,8 +1,12 @@
-# rust-codex32
+# rust-codex32 [![Build Status]][actions] [![Latest Version]][crates.io] [![Rustc Version 1.48+]][rustc]
 
-[![Docs.rs badge](https://docs.rs/codex32/badge.svg)](https://docs.rs/codex32/)
-[![Continuous Integration](https://github.com/apoelstra/rust-codex32/workflows/Continuous%20Integration/badge.svg)](https://github.com/apoelstra/rust-codex32/actions?query=workflow%3A%22Continuous+Integration%22)
-[![Rustc Version 1.48+]][rustc]
+[Build Status]: https://img.shields.io/github/actions/workflow/status/apoelstra/rust-codex32/ci.yml?branch=master
+[actions]: https://github.com/apoelstra/rust-codex32/actions?query=branch%3Amaster
+[Latest Version]: https://img.shields.io/crates/v/codex32.svg
+[crates.io]: https://crates.io/crates/codex32
+[Rustc Version 1.48+]: https://img.shields.io/badge/rustc-1.48+-lightgray.svg
+[rustc]: https://blog.rust-lang.org/2020/11/19/Rust-1.48.html
+
 
 Provides functionality for [codex32/BIP93](https://github.com/bitcoin/bips/blob/master/bip-0093.mediawiki)
 master seeds, for the Rust programming language.
