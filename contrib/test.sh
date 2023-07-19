@@ -7,12 +7,8 @@ set -x
 
 # Some tests require certain toolchain types.
 NIGHTLY=false
-MSRV=false
 if cargo --version | grep nightly; then
     NIGHTLY=true
-fi
-if cargo --version | grep "1\.48"; then
-    MSRV=true
 fi
 
 build_and_test () {
@@ -43,17 +39,7 @@ fi
 if [ "${DO_FEATURE_MATRIX-false}" = true ]; then
     # No features
     build_and_test ""
-
-    # Feature combos
-    build_and_test "std"
-    build_and_test "alloc"
-    build_and_test "std alloc"
-    # arrayvec breaks the MSRV
-    if [ $MSRV = false ]; then
-        build_and_test "arrayvec"
-        build_and_test "std arrayvec"
-        build_and_test "alloc arrayvec"
-    fi
+    # Feature combos (currently no features or dependncies in library)
 fi
 
 # Build the docs if told to (this only works with the nightly toolchain)
