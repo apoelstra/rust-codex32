@@ -14,15 +14,23 @@
 
 //! codex32 Reference Implementation
 //!
-//! This project is a reference implementation of BIP-XXX "codex32", a project
+//! This project is a reference implementation of BIP-93 "codex32", a project
 //! by Leon Olson Curr and Pearlwort Snead to produce checksummed and secret-shared
 //! BIP32 master seeds.
 //!
 //! References:
-//!   * BIP-XXX <https://github.com/apoelstra/bips/blob/2023-02--volvelles/bip-0000.mediawiki>
-//!   * The codex32 website <https://www.secretcodex32.com>
-//!   * BIP-0173 "bech32" <https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki>
-//!   * BIP-0032 "BIP 32" <https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki>
+//!   * [BIP-0093 "codex32"](https://github.com/bitcoin/bips/blob/master/bip-0093.mediawiki)
+//!   * [The codex32 website](https://www.secretcodex32.com)
+//!   * [BIP-0173 "bech32"](https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki)
+//!   * [BIP-0032 "BIP 32"](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)
+//!
+//! **codex32** is a scheme for managing BIP32 master seeds (commonly derived from
+//! 12 or 24 "seed words") without the use of electronic computers. It relies on
+//! by-hand computation using paper computers "volvelles", worksheets, and patience.
+//! More information can be found at the codex32 website, linked above.
+//!
+//! This library serves as a reference implementation of codex32, and should also
+//! be usable by wallet projects who wish to support the import of codex32 seeds.
 //!
 
 // This is the shittiest lint ever and has literally never been correct when
@@ -30,13 +38,15 @@
 // case where it might've been useful.
 // https://github.com/rust-bitcoin/rust-bitcoin/pull/1701
 #![allow(clippy::suspicious_arithmetic_impl)]
+// This lint also has negative value.
+#![allow(clippy::assertions_on_constants)]
 
 mod checksum;
 mod field;
 
-use std::{cmp, fmt};
 pub use checksum::Engine as ChecksumEngine;
 pub use field::Fe;
+use std::{cmp, fmt};
 
 #[derive(Debug)]
 pub enum Error {
@@ -217,10 +227,7 @@ impl Codex32String {
     /// Interpolate a set of shares to derive a share at a specific index.
     ///
     /// Using the index `Fe::S` will recover the master seed.
-    pub fn interpolate_at(
-        shares: &[Codex32String],
-        target: Fe,
-    ) -> Result<Codex32String, Error> {
+    pub fn interpolate_at(shares: &[Codex32String], target: Fe) -> Result<Codex32String, Error> {
         // Collect indices and sanity check
         if shares.is_empty() {
             return Err(Error::ThresholdNotPassed {
@@ -525,7 +532,7 @@ mod tests {
             0xff, 0xee, 0xdd, 0xcc, 0xbb, 0xaa, 0x99, 0x88,
             0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00,
             0xff, 0xee, 0xdd, 0xcc, 0xbb, 0xaa, 0x99, 0x88,
-            0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00, 
+            0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00,
         ];
         let seed = Codex32String::from_seed("ms", 0, "leet", Fe::S, &seed_b).unwrap();
         assert_eq!(
@@ -591,7 +598,8 @@ mod tests {
             "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx8kp950klmrlsm",
         ];
         for chk in &bad_checksums {
-            if let Err(Error::InvalidChecksum { .. }) = Codex32String::from_string(chk.to_string()) {
+            if let Err(Error::InvalidChecksum { .. }) = Codex32String::from_string(chk.to_string())
+            {
                 // ok
             } else {
                 panic!(

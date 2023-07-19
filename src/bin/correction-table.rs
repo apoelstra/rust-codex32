@@ -34,7 +34,12 @@ struct Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "+{} @ {:2}", self.diff.to_char().to_ascii_uppercase(), self.position)
+        write!(
+            f,
+            "+{} @ {:2}",
+            self.diff.to_char().to_ascii_uppercase(),
+            self.position
+        )
     }
 }
 
@@ -60,7 +65,6 @@ fn engine_to_residue(engine: codex32::ChecksumEngine) -> String {
         .map(|c| c.to_ascii_uppercase())
         .collect()
 }
-
 
 fn main() {
     assert!(SHARE_LEN <= 93); // for now don't bother supporting long strings
@@ -90,12 +94,10 @@ fn main() {
             }
             residues.insert(
                 engine_to_residue(engine),
-                vec![
-                    Error {
-                        position: i,
-                        diff: err,
-                    },
-                ]
+                vec![Error {
+                    position: i,
+                    diff: err,
+                }],
             );
         }
     }
@@ -131,7 +133,7 @@ fn main() {
                                 position: j,
                                 diff: err2,
                             },
-                        ]
+                        ],
                     );
                 }
             }
@@ -148,4 +150,3 @@ fn main() {
     }
     println!("Total: {} possibilities", residues.len());
 }
-

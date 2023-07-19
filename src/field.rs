@@ -30,7 +30,7 @@ use std::{
 #[rustfmt::skip]
 const LOG: [isize; 32] = [
      0,  0,  1, 14,  2, 28, 15, 22,
-     3,  5, 29, 26, 16,  7, 23, 11, 
+     3,  5, 29, 26, 16,  7, 23, 11,
      4, 25,  6, 10, 30, 13, 27, 21,
     17, 18,  8, 19, 24,  9, 12, 20,
 ];
@@ -194,6 +194,7 @@ impl Fe {
     pub const L: Fe = Fe(31);
 
     /// Iterator over all field elements, in alphabetical order
+    #[rustfmt::skip]
     pub fn iter_alpha() -> impl Iterator<Item = Fe> {
         [
             Fe::A, Fe::C, Fe::D, Fe::E, Fe::F, Fe::G, Fe::H, Fe::J,
