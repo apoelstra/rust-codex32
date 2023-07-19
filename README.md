@@ -1,4 +1,6 @@
-# rust-codex32 [![Build Status]][actions] [![Latest Version]][crates.io] [![Rustc Version 1.48+]][rustc]
+# rust-codex32
+
+[![Build Status]][actions] [![Latest Version]][crates.io] [![Rustc Version 1.48+]][rustc]
 
 [Build Status]: https://img.shields.io/github/actions/workflow/status/apoelstra/rust-codex32/ci.yml?branch=master
 [actions]: https://github.com/apoelstra/rust-codex32/actions?query=branch%3Amaster
