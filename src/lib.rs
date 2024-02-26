@@ -146,8 +146,13 @@ impl Codex32String {
         // Compute the checksum
         checksum.input_hrp(hrp)?;
         checksum.input_data_str(real_string)?;
+        checksum.input_own_target();
+        let case = checksum.get_case().unwrap();
         for ch in checksum.into_residue() {
-            s.push(ch.to_char());
+            match case {
+                Case::Lower => s.push(ch.to_char()),
+                Case::Upper => s.push(ch.to_char().to_uppercase().next().unwrap()),
+            }
         }
 
         let ret = Codex32String(s);
@@ -711,5 +716,145 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn from_unchecksummed_string() {
+        macro_rules! calculate_and_check {
+            ($left:expr, $right:expr) => {{
+                let got = Codex32String::from_unchecksummed_string($left.to_string()).unwrap();
+                let want = Codex32String::from_string($right.to_string()).unwrap();
+                assert_eq!(got, want);
+            }};
+        }
+        // Vectors taken from all valid codex32 strings in BIP-93
+        calculate_and_check!(
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "ms10testsxxxxxxxxxxxxxxxxxxxxxxxxxx4nzvca9cmczlw"
+        );
+        calculate_and_check!(
+            "MS12NAMEA320ZYXWVUTSRQPNMLKJHGFEDCA",
+            "MS12NAMEA320ZYXWVUTSRQPNMLKJHGFEDCAXRPP870HKKQRM"
+        );
+        calculate_and_check!(
+            "MS12NAMECACDEFGHJKLMNPQRSTUVWXYZ023",
+            "MS12NAMECACDEFGHJKLMNPQRSTUVWXYZ023FTR2GDZMPY6PN"
+        );
+        calculate_and_check!(
+            "MS12NAMEDLL4F8JLH4E5VDVULDLFXU2JHDN",
+            "MS12NAMEDLL4F8JLH4E5VDVULDLFXU2JHDNLSM97XVENRXEG"
+        );
+        calculate_and_check!(
+            "MS12NAMES6XQGUZTTXKEQNJSJZV4JV3NZ5K",
+            "MS12NAMES6XQGUZTTXKEQNJSJZV4JV3NZ5K3KWGSPHUH6EVW"
+        );
+        calculate_and_check!(
+            "ms13cashsllhdmn9m42vcsamx24zrxgs3qq",
+            "ms13cashsllhdmn9m42vcsamx24zrxgs3qqjzqud4m0d6nln"
+        );
+        calculate_and_check!(
+            "ms13casha320zyxwvutsrqpnmlkjhgfedca",
+            "ms13casha320zyxwvutsrqpnmlkjhgfedca2a8d0zehn8a0t"
+        );
+        calculate_and_check!(
+            "ms13cashcacdefghjklmnpqrstuvwxyz023",
+            "ms13cashcacdefghjklmnpqrstuvwxyz023949xq35my48dr"
+        );
+        calculate_and_check!(
+            "ms13cashd0wsedstcdcts64cd7wvy4m90lm",
+            "ms13cashd0wsedstcdcts64cd7wvy4m90lm28w4ffupqs7rm"
+        );
+        calculate_and_check!(
+            "ms13casheekgpemxzshcrmqhaydlp6yhms3",
+            "ms13casheekgpemxzshcrmqhaydlp6yhms3ws7320xyxsar9"
+        );
+        calculate_and_check!(
+            "ms13cashf8jh6sdrkpyrsp5ut94pj8ktehh",
+            "ms13cashf8jh6sdrkpyrsp5ut94pj8ktehhw2hfvyrj48704"
+        );
+        calculate_and_check!(
+            "ms13cashsllhdmn9m42vcsamx24zrxgs3qp",
+            "ms13cashsllhdmn9m42vcsamx24zrxgs3qpte35dvzkjpt0r"
+        );
+        calculate_and_check!(
+            "ms13cashsllhdmn9m42vcsamx24zrxgs3qz",
+            "ms13cashsllhdmn9m42vcsamx24zrxgs3qzfatvdwq5692k6"
+        );
+        calculate_and_check!(
+            "ms13cashsllhdmn9m42vcsamx24zrxgs3qr",
+            "ms13cashsllhdmn9m42vcsamx24zrxgs3qrsx6ydhed97jx2"
+        );
+        calculate_and_check!(
+            "ms13cashsllhdmn9m42vcsamx24zrxgs3qr",
+            "ms13cashsllhdmn9m42vcsamx24zrxgs3qrsx6ydhed97jx2"
+        );
+        calculate_and_check!(
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqq",
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqqtum9pgv99ycma"
+        );
+        calculate_and_check!(
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqp",
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqpj82dp34u6lqtd"
+        );
+        calculate_and_check!(
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqz",
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqzsrs4pnh7jmpj5"
+        );
+        calculate_and_check!(
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqr",
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqrfcpap2w8dqezy"
+        );
+        calculate_and_check!(
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqy",
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqy5tdvphn6znrf0"
+        );
+        calculate_and_check!(
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyq9",
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyq9dsuypw2ragmel"
+        );
+        calculate_and_check!(
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqx",
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqx05xupvgp4v6qx"
+        );
+        calculate_and_check!(
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyq8",
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyq8k0h5p43c2hzsk"
+        );
+        calculate_and_check!(
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqg",
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqgum7hplmjtr8ks"
+        );
+        calculate_and_check!(
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqf",
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqf9q0lpxzt5clxq"
+        );
+        calculate_and_check!(
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyq2",
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyq28y48pyqfuu7le"
+        );
+        calculate_and_check!(
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqt",
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqt7ly0paesr8x0f"
+        );
+        calculate_and_check!(
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqv",
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqvrvg7pqydv5uyz"
+        );
+        calculate_and_check!(
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqd",
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqd6hekpea5n0y5j"
+        );
+        calculate_and_check!(
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqw",
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyqwcnrwpmlkmt9dt"
+        );
+        calculate_and_check!(
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyq0",
+            "ms10leetsllhdmn9m42vcsamx24zrxgs3qrl7ahwvhw4fnzrhve25gvezzyq0pgjxpzx0ysaam"
+        );
+        calculate_and_check!(
+            "MS100C8VSM32ZXFGUHPCHTLUPZRY9X8GF2TVDW0S3JN54KHCE6MUA7LQPZYGSFJD6AN074RXVCEMLH8WU3TK925ACDEFGHJKLMNPQRSTUVWXY06F",
+            "MS100C8VSM32ZXFGUHPCHTLUPZRY9X8GF2TVDW0S3JN54KHCE6MUA7LQPZYGSFJD6AN074RXVCEMLH8WU3TK925ACDEFGHJKLMNPQRSTUVWXY06FHPV80UNDVARHRAK"
+        );
     }
 }

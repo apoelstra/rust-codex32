@@ -169,6 +169,11 @@ impl Engine {
         }
     }
 
+    /// Gets the expected case of consumed characters
+    pub fn get_case(&self) -> Option<Case> {
+        self.case
+    }
+
     /// Adds a single field element to the checksum engine
     ///
     /// This is where the real magic happens.
