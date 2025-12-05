@@ -475,6 +475,36 @@ mod tests {
     }
 
     #[test]
+    fn my_vector(){
+        let a = Codex32String::from_string("ms13k00lapkefqh6v5dhe5d0s6ttz5dx74s85czngjvcm49c".into()).unwrap();
+        let c = Codex32String::from_string("ms13k00lc376pu3hgnuwndjpvqylscdp4u0pyufufaw2423n".into()).unwrap();
+        let f = Codex32String::from_string("ms13k00lfnl4qt08ugmgct27mf7fcdd6mchlxg8xv8yz2j8a".into()).unwrap();
+
+        // serialize for storage
+        let a_data = a.parts().data();
+        let c_data = c.parts().data();
+        let f_data = f.parts().data();
+
+        // de-serialize
+        let aa = Codex32String::from_seed("ms", 3, "k00l", Fe::A, &a_data).unwrap();
+        let cc = Codex32String::from_seed("ms", 3, "k00l", Fe::C, &c_data).unwrap();
+        let ff = Codex32String::from_seed("ms", 3, "k00l", Fe::F, &f_data).unwrap();
+
+        // recover S from shares pre-serialization
+        let share_acf = [a, c, f];
+        let s_acf = Codex32String::interpolate_at(&share_acf, Fe::S).unwrap();
+
+        // recover S from shares post-serialization
+        let share_aaccff = [aa, cc, ff];
+        let s_aaccff = Codex32String::interpolate_at(&share_aaccff, Fe::S).unwrap();
+
+        assert_eq!(
+            hex(&s_acf.parts().data()),
+            hex(&s_aaccff.parts().data()),
+        );
+    }
+
+    #[test]
     fn bip_vector_2() {
         let share_ac = [
             Codex32String::from_string("MS12NAMEA320ZYXWVUTSRQPNMLKJHGFEDCAXRPP870HKKQRM".into())
